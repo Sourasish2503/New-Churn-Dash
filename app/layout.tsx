@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { WhopIframeSdkProvider } from "@whop/react";
+import WhopProvider from "@/components/WhopProvider";
 // @ts-ignore — CSS module side-effect import
 import "./globals.css";
 
@@ -19,7 +19,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body className="bg-[#0a0a0a] text-[#f5f5f5] antialiased">
-        <WhopIframeSdkProvider>{children}</WhopIframeSdkProvider>
+        <WhopProvider>{children}</WhopProvider>
       </body>
     </html>
   );
