@@ -10,23 +10,6 @@ interface Props {
   searchParams: Promise<{ refresh?: string }>;
 }
 
-async function checkAdminAccess(companyId: string, userId: string): Promise<boolean> {
-  const res = await fetch(
-    `https://api.whop.com/api/v2/companies/${companyId}/memberships?user_id=${userId}`,
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.WHOP_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      cache: "no-store",
-    }
-  );
-  if (!res.ok) return false;
-  const data = await res.json();
-  // Company owner / admin always has a valid membership with manage rights
-  return Array.isArray(data?.data) && data.data.length > 0;
-}
-
 export default async function DashboardPage({ params, searchParams }: Props) {
   const { companyId } = await params;
   const { refresh }   = await searchParams;
@@ -44,9 +27,18 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     );
   }
 
-  // Step 2 — check admin access via REST
-  const isAdmin = await checkAdminAccess(companyId, userId);
-  if (!isAdmin) {
+  // Step 2 — verify admin access using companies.retrieveMember
+  try {
+    const member = await whopsdk.companies.retrieveMember(companyId, userId);
+    if (!member || member.role !== "admin") {
+      return (
+        <div className="p-8 text-center text-sm text-gray-400">
+          Admin access required.
+        </div>
+      );
+    }
+  } catch {
+    // If the call fails (404/403), user is not a member/admin
     return (
       <div className="p-8 text-center text-sm text-gray-400">
         Admin access required.
