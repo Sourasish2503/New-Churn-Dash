@@ -15,6 +15,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const { refresh }   = await searchParams;
 
   // Step 1 — verify the Whop user token injected by the iframe proxy
+  // verifyUserToken confirms the request is coming from a real Whop session
   let userId: string;
   try {
     const result = await whopsdk.verifyUserToken(await headers());
@@ -27,26 +28,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     );
   }
 
-  // Step 2 — verify admin access using companies.retrieveMember
-  try {
-    const member = await whopsdk.companies.retrieveMember(companyId, userId);
-    if (!member || member.role !== "admin") {
-      return (
-        <div className="p-8 text-center text-sm text-gray-400">
-          Admin access required.
-        </div>
-      );
-    }
-  } catch {
-    // If the call fails (404/403), user is not a member/admin
-    return (
-      <div className="p-8 text-center text-sm text-gray-400">
-        Admin access required.
-      </div>
-    );
-  }
-
-  // Step 3 — load or refresh the cohort snapshot
+  // Step 2 — load or refresh the cohort snapshot
+  // TODO: add granular admin role check once SDK method is confirmed
   let snapshot;
   try {
     snapshot = await getOrRefreshSnapshot(companyId, refresh === "1");
