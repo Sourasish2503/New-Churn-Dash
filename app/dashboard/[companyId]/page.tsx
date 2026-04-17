@@ -2,7 +2,8 @@ import { headers } from "next/headers";
 import { whopsdk } from "@/lib/whop-sdk";
 import { getOrRefreshSnapshot } from "@/lib/get-or-refresh-snapshot";
 import DashboardShell from "@/components/DashboardShell";
-
+// app/dashboard/[companyId]/page.tsx — add this at the very top
+export const dynamic = "force-dynamic";
 interface Props {
   params: Promise<{ companyId: string }>;
   searchParams: Promise<{ refresh?: string }>;

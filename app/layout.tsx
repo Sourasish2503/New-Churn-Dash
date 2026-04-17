@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import WhopProvider from "@/components/WhopProvider";
-// @ts-ignore — CSS module side-effect import
+// @ts-ignore
 import "./globals.css";
 
 const inter = Inter({
@@ -19,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={inter.variable}>
       <body className="bg-[#0a0a0a] text-[#f5f5f5] antialiased">
-        <WhopProvider>{children}</WhopProvider>
+        {children}
       </body>
     </html>
   );

@@ -1,3 +1,6 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/webhooks/route": "app/api/webhooks/route.js",
+  "/dashboard/[companyId]/page": "app/dashboard/[companyId]/page.js",
   "/page": "app/page.js"
 }
