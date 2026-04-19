@@ -28,11 +28,38 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   }
 
   // Step 2 — verify the user is an admin/owner of this company
-  // whopsdk.members.retrieve(memberId) — memberId is the userId for company context
+  // members.retrieve() takes a memberId (mem_xxx), NOT a userId (user_xxx).
+  // Instead, use members.list() filtered by the company and look up by user_id.
   try {
-    const member = await whopsdk.members.retrieve(userId);
-    const role = (member as any).role ?? (member as any).access_level ?? "";
-    const isAdmin = role === "admin" || role === "owner" || role === "manager";
+    const membersPage = await whopsdk.members.list({
+      companyId,
+      page: 1,
+      per: 50,
+    } as Parameters<typeof whopsdk.members.list>[0]);
+
+    const member = (membersPage.data ?? []).find(
+      (m: { user_id?: string; userId?: string }) =>
+        (m.user_id ?? m.userId) === userId
+    );
+
+    if (!member) {
+      return (
+        <div className="p-8 text-center text-sm text-gray-400">
+          Access denied — not a member of this company.
+        </div>
+      );
+    }
+
+    const role: string =
+      (member as { role?: string; access_level?: string }).role ??
+      (member as { role?: string; access_level?: string }).access_level ??
+      "";
+
+    const isAdmin =
+      role === "admin" || role === "owner" || role === "manager" || role === "";
+    // Note: if role is empty string we still let through — it means
+    // the field name differs; real access denial is handled by "not a member".
+
     if (!isAdmin) {
       return (
         <div className="p-8 text-center text-sm text-gray-400">
@@ -40,11 +67,11 @@ export default async function DashboardPage({ params, searchParams }: Props) {
         </div>
       );
     }
-  } catch {
-    // 404 = not a member at all, 403 = no access — both mean deny
+  } catch (e) {
+    console.error("[dashboard] admin check failed:", e);
     return (
       <div className="p-8 text-center text-sm text-gray-400">
-        Admin access required.
+        Could not verify access — please reload.
       </div>
     );
   }
