@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import { BarChart2, Users, TrendingDown, AlertTriangle, RefreshCw } from "lucide-react";
 import type { CachedSnapshot } from "@/types";
@@ -26,6 +27,7 @@ interface Props {
 }
 
 export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props) {
+  const router = useRouter();
   const [activeTab,    setActiveTab]    = useState<Tab>("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
   // Avoid hydration mismatch — only format time on client
@@ -39,7 +41,7 @@ export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props
 
   function handleRefresh() {
     setIsRefreshing(true);
-    window.location.href = `/dashboard/${companyId}?refresh=1`;
+    router.push(`/dashboard/${companyId}?refresh=1`);
   }
 
   return (
