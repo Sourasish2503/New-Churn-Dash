@@ -1,35 +1,41 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { BarChart2, Users, TrendingDown, AlertTriangle, RefreshCw } from "lucide-react";
 import type { CachedSnapshot } from "@/types";
 import KPICards from "./KPICards";
-import RetentionMatrix from "./RetentionMatrix";
-import ChurnChart from "./ChurnChart";
 import AtRiskTable from "./AtRiskTable";
+
+// Dynamically import chart-heavy components to avoid SSR/hydration issues
+const RetentionMatrix = dynamic(() => import("./RetentionMatrix"), { ssr: false });
+const ChurnChart      = dynamic(() => import("./ChurnChart"),      { ssr: false });
 
 type Tab = "overview" | "retention" | "churn" | "at-risk";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "overview",   label: "Overview",       icon: <BarChart2 className="w-4 h-4" /> },
-  { id: "retention",  label: "Retention",      icon: <Users className="w-4 h-4" /> },
-  { id: "churn",      label: "Churn Analysis", icon: <TrendingDown className="w-4 h-4" /> },
-  { id: "at-risk",    label: "At Risk",        icon: <AlertTriangle className="w-4 h-4" /> },
+  { id: "overview",  label: "Overview",       icon: <BarChart2     className="w-4 h-4" /> },
+  { id: "retention", label: "Retention",      icon: <Users         className="w-4 h-4" /> },
+  { id: "churn",     label: "Churn Analysis", icon: <TrendingDown   className="w-4 h-4" /> },
+  { id: "at-risk",   label: "At Risk",        icon: <AlertTriangle  className="w-4 h-4" /> },
 ];
 
 interface Props {
-  companyId:  string;
-  snapshot:   CachedSnapshot;
-  fetchedAt:  number;
+  companyId: string;
+  snapshot:  CachedSnapshot;
+  fetchedAt: number;
 }
 
 export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props) {
   const [activeTab,    setActiveTab]    = useState<Tab>("overview");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  // Avoid hydration mismatch — only format time on client
+  const [lastUpdated,  setLastUpdated]  = useState<string>("...");
 
-  const lastUpdated = new Date(fetchedAt).toLocaleTimeString("en-US", {
-    hour:   "2-digit",
-    minute: "2-digit",
-  });
+  useEffect(() => {
+    setLastUpdated(
+      new Date(fetchedAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+    );
+  }, [fetchedAt]);
 
   function handleRefresh() {
     setIsRefreshing(true);
@@ -50,9 +56,7 @@ export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props
             <rect x="24" y="4"  width="4" height="22" rx="1" fill="#8b5cf6" fillOpacity="0.4" />
           </svg>
           <div>
-            <h1 className="text-[#f5f5f5] font-semibold text-sm leading-tight">
-              Cohort Dashboard
-            </h1>
+            <h1 className="text-[#f5f5f5] font-semibold text-sm leading-tight">Cohort Dashboard</h1>
             <p className="text-[#888] text-xs">
               {snapshot.memberCount.toLocaleString()} members · Updated {lastUpdated}
             </p>
@@ -86,9 +90,11 @@ export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props
             onClick={() => setActiveTab(tab.id)}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium rounded-t-lg
                         border-b-2 transition-colors
-                        ${activeTab === tab.id
-                          ? "border-violet-500 text-[#f5f5f5]"
-                          : "border-transparent text-[#888] hover:text-[#f5f5f5]"}`}
+                        ${
+                          activeTab === tab.id
+                            ? "border-violet-500 text-[#f5f5f5]"
+                            : "border-transparent text-[#888] hover:text-[#f5f5f5]"
+                        }`}
           >
             {tab.icon}
             {tab.label}
@@ -103,37 +109,19 @@ export default function DashboardShell({ companyId, snapshot, fetchedAt }: Props
 
       {/* ── Main Content ── */}
       <main className="flex-1 overflow-auto p-6">
-
         {activeTab === "overview" && (
           <div className="flex flex-col gap-6">
             <KPICards kpis={snapshot.kpis} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ChurnChart
-                velocity={snapshot.churnVelocity}
-                reasons={snapshot.cancelReasons}
-                compact
-              />
+              <ChurnChart velocity={snapshot.churnVelocity} reasons={snapshot.cancelReasons} compact />
               <AtRiskTable members={snapshot.atRisk} compact />
             </div>
             <RetentionMatrix rows={snapshot.cohortRows} />
           </div>
         )}
-
-        {activeTab === "retention" && (
-          <RetentionMatrix rows={snapshot.cohortRows} />
-        )}
-
-        {activeTab === "churn" && (
-          <ChurnChart
-            velocity={snapshot.churnVelocity}
-            reasons={snapshot.cancelReasons}
-          />
-        )}
-
-        {activeTab === "at-risk" && (
-          <AtRiskTable members={snapshot.atRisk} />
-        )}
-
+        {activeTab === "retention" && <RetentionMatrix rows={snapshot.cohortRows} />}
+        {activeTab === "churn"     && <ChurnChart velocity={snapshot.churnVelocity} reasons={snapshot.cancelReasons} />}
+        {activeTab === "at-risk"   && <AtRiskTable members={snapshot.atRisk} />}
       </main>
     </div>
   );
