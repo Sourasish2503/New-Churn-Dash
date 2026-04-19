@@ -28,8 +28,6 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   }
 
   // Step 2 — verify the user is an admin/owner of this company
-  // members.retrieve() takes a memberId (mem_xxx), NOT a userId (user_xxx).
-  // Instead, use members.list() filtered by the company and look up by user_id.
   try {
     const membersPage = await whopsdk.members.list({
       companyId,
@@ -37,9 +35,9 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       per: 50,
     } as Parameters<typeof whopsdk.members.list>[0]);
 
+    // MemberListResponse nests user info under .user.id — not top-level user_id/userId
     const member = (membersPage.data ?? []).find(
-      (m: { user_id?: string; userId?: string }) =>
-        (m.user_id ?? m.userId) === userId
+      (m) => m.user?.id === userId
     );
 
     if (!member) {
@@ -50,10 +48,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       );
     }
 
-    const role: string =
-      (member as { role?: string; access_level?: string }).role ??
-      (member as { role?: string; access_level?: string }).access_level ??
-      "";
+    const role: string = (member.role as string) ?? "";
 
     const isAdmin =
       role === "admin" || role === "owner" || role === "manager" || role === "";
