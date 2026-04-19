@@ -27,7 +27,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     );
   }
 
-  // Step 2 — verify the user is an admin/owner of this company
+  // Step 2 — verify the user is a member of this company
   try {
     const membersPage = await whopsdk.members.list({
       companyId,
@@ -35,35 +35,20 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       per: 50,
     } as Parameters<typeof whopsdk.members.list>[0]);
 
-    // MemberListResponse nests user info under .user.id — not top-level user_id/userId
-    const member = (membersPage.data ?? []).find(
+    // MemberListResponse nests user info under .user.id
+    const isMember = (membersPage.data ?? []).some(
       (m) => m.user?.id === userId
     );
 
-    if (!member) {
+    if (!isMember) {
       return (
         <div className="p-8 text-center text-sm text-gray-400">
           Access denied — not a member of this company.
         </div>
       );
     }
-
-    const role: string = (member.role as string) ?? "";
-
-    const isAdmin =
-      role === "admin" || role === "owner" || role === "manager" || role === "";
-    // Note: if role is empty string we still let through — it means
-    // the field name differs; real access denial is handled by "not a member".
-
-    if (!isAdmin) {
-      return (
-        <div className="p-8 text-center text-sm text-gray-400">
-          Admin access required.
-        </div>
-      );
-    }
   } catch (e) {
-    console.error("[dashboard] admin check failed:", e);
+    console.error("[dashboard] member check failed:", e);
     return (
       <div className="p-8 text-center text-sm text-gray-400">
         Could not verify access — please reload.
