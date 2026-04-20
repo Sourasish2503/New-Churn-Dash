@@ -27,23 +27,24 @@ export default async function DashboardPage({ params, searchParams }: Props) {
     );
   }
 
-  // Step 2 — verify the user is a member of this company
+  // Step 2 — verify the user is an ADMIN of this company
+  // Docs: parameter is company_id (snake_case), pagination uses `first` not `per`
+  // Member shape: { user: { id }, access_level: "admin" | "customer" | "no_access" }
   try {
     const membersPage = await whopsdk.members.list({
-      companyId,
-      page: 1,
-      per: 50,
+      company_id: companyId,
+      first: 50,
     } as Parameters<typeof whopsdk.members.list>[0]);
 
-    // MemberListResponse nests user info under .user.id
-    const isMember = (membersPage.data ?? []).some(
+    const currentMember = (membersPage.data ?? []).find(
       (m) => m.user?.id === userId
     );
 
-    if (!isMember) {
+    // Dashboard view is admin-only
+    if (!currentMember || currentMember.access_level !== "admin") {
       return (
         <div className="p-8 text-center text-sm text-gray-400">
-          Access denied — not a member of this company.
+          Access denied — admin access required.
         </div>
       );
     }
