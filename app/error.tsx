@@ -1,8 +1,6 @@
 "use client";
 import { useEffect } from "react";
 
-// Errors originating from Whop's own iframe shell JS (MessagePort race condition).
-// These are not our errors — silently ignore them and let the page render.
 function isWhopInternalError(error: Error): boolean {
   const stack = error?.stack ?? "";
   const message = error?.message ?? "";
@@ -11,29 +9,26 @@ function isWhopInternalError(error: Error): boolean {
     stack.includes("MessagePort") ||
     stack.includes("907af91b") ||
     stack.includes("205-00133864") ||
-    (message === "r is not a function") ||
-    (message === "a is not a function")
+    message === "r is not a function" ||
+    message === "a is not a function"
   );
 }
 
 export default function GlobalError({
   error,
-  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
   useEffect(() => {
     if (isWhopInternalError(error)) {
-      // Whop's iframe shell crashed — auto-reset silently
       console.warn("[GlobalError] Whop internal error suppressed:", error.message);
-      reset();
       return;
     }
     console.error("[GlobalError]", error);
-  }, [error, reset]);
+  }, [error]);
 
-  // Don't render anything for Whop internal errors
+  // Whop's own crash — render nothing, let the page show through
   if (isWhopInternalError(error)) return null;
 
   return (
@@ -46,12 +41,6 @@ export default function GlobalError({
           {error?.stack ? "\n\n" + error.stack : ""}
           {error?.digest ? "\n\nDigest: " + error.digest : ""}
         </pre>
-        <button
-          onClick={reset}
-          className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 text-sm rounded-lg border border-red-500/30 transition-colors"
-        >
-          Try Again
-        </button>
       </div>
     </div>
   );

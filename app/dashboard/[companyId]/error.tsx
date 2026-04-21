@@ -9,8 +9,8 @@ function isWhopInternalError(error: Error): boolean {
     stack.includes("MessagePort") ||
     stack.includes("907af91b") ||
     stack.includes("205-00133864") ||
-    (message === "r is not a function") ||
-    (message === "a is not a function")
+    message === "r is not a function" ||
+    message === "a is not a function"
   );
 }
 
@@ -24,12 +24,12 @@ export default function DashboardError({
   useEffect(() => {
     if (isWhopInternalError(error)) {
       console.warn("[DashboardError] Whop internal error suppressed:", error.message);
-      reset();
       return;
     }
     console.error("[DashboardError]", error);
-  }, [error, reset]);
+  }, [error]);
 
+  // Whop's own crash — render nothing, let the dashboard show through
   if (isWhopInternalError(error)) return null;
 
   return (
