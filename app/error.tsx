@@ -1,6 +1,21 @@
 "use client";
 import { useEffect } from "react";
 
+// Errors originating from Whop's own iframe shell JS (MessagePort race condition).
+// These are not our errors — silently ignore them and let the page render.
+function isWhopInternalError(error: Error): boolean {
+  const stack = error?.stack ?? "";
+  const message = error?.message ?? "";
+  return (
+    stack.includes("apps.whop.com") ||
+    stack.includes("MessagePort") ||
+    stack.includes("907af91b") ||
+    stack.includes("205-00133864") ||
+    (message === "r is not a function") ||
+    (message === "a is not a function")
+  );
+}
+
 export default function GlobalError({
   error,
   reset,
@@ -9,8 +24,17 @@ export default function GlobalError({
   reset: () => void;
 }) {
   useEffect(() => {
+    if (isWhopInternalError(error)) {
+      // Whop's iframe shell crashed — auto-reset silently
+      console.warn("[GlobalError] Whop internal error suppressed:", error.message);
+      reset();
+      return;
+    }
     console.error("[GlobalError]", error);
-  }, [error]);
+  }, [error, reset]);
+
+  // Don't render anything for Whop internal errors
+  if (isWhopInternalError(error)) return null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-8">

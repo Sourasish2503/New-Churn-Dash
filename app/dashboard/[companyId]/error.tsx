@@ -1,6 +1,19 @@
 "use client";
 import { useEffect } from "react";
 
+function isWhopInternalError(error: Error): boolean {
+  const stack = error?.stack ?? "";
+  const message = error?.message ?? "";
+  return (
+    stack.includes("apps.whop.com") ||
+    stack.includes("MessagePort") ||
+    stack.includes("907af91b") ||
+    stack.includes("205-00133864") ||
+    (message === "r is not a function") ||
+    (message === "a is not a function")
+  );
+}
+
 export default function DashboardError({
   error,
   reset,
@@ -9,8 +22,15 @@ export default function DashboardError({
   reset: () => void;
 }) {
   useEffect(() => {
+    if (isWhopInternalError(error)) {
+      console.warn("[DashboardError] Whop internal error suppressed:", error.message);
+      reset();
+      return;
+    }
     console.error("[DashboardError]", error);
-  }, [error]);
+  }, [error, reset]);
+
+  if (isWhopInternalError(error)) return null;
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-8">
